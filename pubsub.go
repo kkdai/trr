@@ -2,12 +2,13 @@ package tszpubsub
 
 import (
 	"errors"
+	"log"
 
 	tsz "github.com/dgryski/go-tsz"
 )
 
 type tszChan struct {
-	timeSeries tsz.Series
+	timeSeries *tsz.Series
 	topic      string
 	channel    chan interface{}
 }
@@ -41,6 +42,7 @@ func (t *TszPubsub) PublishTimeData(topic string, timeData uint32, value float64
 	if !isSliceContain(t.topic, topic) {
 		t.topic = append(t.topic, topic)
 		newTsz := tszChan{topic: topic, channel: make(chan interface{}, t.capacity)}
+		newTsz.timeSeries = tsz.New(timeData)
 		t.chanToTsz = append(t.chanToTsz, newTsz)
 	}
 
@@ -58,7 +60,12 @@ func (t *TszPubsub) ReadChanTopic(topic string) (uint32, float64, error) {
 		for k, v := range t.chanToTsz {
 			if v.topic == topic {
 				<-t.chanToTsz[k].channel
-				tt, vv := t.chanToTsz[k].timeSeries.Iter().Values()
+				iter := t.chanToTsz[k].timeSeries.Iter()
+				stillIter := iter.Next()
+				if !stillIter {
+					log.Println("to end")
+				}
+				tt, vv := iter.Values()
 				return tt, vv, nil
 			}
 		}
