@@ -1,6 +1,8 @@
 package tszpubsub
 
 import (
+	"errors"
+
 	tsz "github.com/dgryski/go-tsz"
 )
 
@@ -14,11 +16,15 @@ type tszChan struct {
 type TszPubsub struct {
 	topic     []string
 	chanToTsz []tszChan
+	capacity  int
 }
 
 //NewTszPubsub :
-func NewTszPubsub() *TszPubsub {
-	return new(TszPubsub)
+func NewTszPubsub(cap int) *TszPubsub {
+	tt := new(TszPubsub)
+	tt.capacity = cap
+	go tt.loop()
+	return tt
 }
 
 func isSliceContain(slice []string, target string) bool {
@@ -34,7 +40,7 @@ func isSliceContain(slice []string, target string) bool {
 func (t *TszPubsub) PublishTimeData(topic string, timeData uint32, value float64) {
 	if !isSliceContain(t.topic, topic) {
 		t.topic = append(t.topic, topic)
-		newTsz := tszChan{topic: topic, channel: make(chan interface{})}
+		newTsz := tszChan{topic: topic, channel: make(chan interface{}, t.capacity)}
 		t.chanToTsz = append(t.chanToTsz, newTsz)
 	}
 
@@ -44,13 +50,21 @@ func (t *TszPubsub) PublishTimeData(topic string, timeData uint32, value float64
 			t.chanToTsz[k].channel <- 0
 		}
 	}
-
 }
 
 //ReadChanTopic :
-func (t *TszPubsub) ReadChanTopic(topic string) (uint32, float64) {
+func (t *TszPubsub) ReadChanTopic(topic string) (uint32, float64, error) {
+	if isSliceContain(t.topic, topic) {
+		for k, v := range t.chanToTsz {
+			if v.topic == topic {
+				<-t.chanToTsz[k].channel
+				tt, vv := t.chanToTsz[k].timeSeries.Iter().Values()
+				return tt, vv, nil
+			}
+		}
+	}
 
-	return 0, 0
+	return 0, 0, errors.New("Not found!")
 }
 
 func (t *TszPubsub) loop() {
