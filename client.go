@@ -13,13 +13,19 @@
 package trr
 
 import (
+	"errors"
 	"fmt"
 	"log"
 	"net/rpc"
+
+	tsz "github.com/dgryski/go-tsz"
 )
 
 type Clerk struct {
 	server string
+
+	localTimeSeries *tsz.Series
+	localIter       *tsz.Iter
 }
 
 func MakeClerk(server string) *Clerk {
@@ -49,7 +55,7 @@ func call(srv string, rpcname string,
 
 //Get
 // fetch the current value for a key.
-func (ck *Clerk) Get(key string) []byte {
+func (ck *Clerk) getRaw(key string) []byte {
 	arg := GetArgs{Key: key}
 	var reply GetReply
 	err := call(ck.server, "KVRaft.Get", &arg, &reply)
@@ -60,8 +66,26 @@ func (ck *Clerk) Get(key string) []byte {
 	return reply.Value
 }
 
-//Put
-func (ck *Clerk) Put(key string, value []byte) {
+//GetTimeData :
+func (ck *Clerk) GetTimeData(key string) (uint32, float64, error) {
+	if ck.localIter == nil || ck.localIter.Next() == false {
+		timeData := ck.getRaw(key)
+		if timeData == nil {
+			return 0, 0, errors.New("No key")
+		}
+		var err error
+		ck.localIter, err = tsz.NewIterator(timeData)
+		if err != nil {
+			return 0, 0, errors.New("No value")
+		}
+	}
+
+	tt, vv := ck.localIter.Values()
+	return tt, vv, nil
+}
+
+//putRaw :
+func (ck *Clerk) putRaw(key string, value []byte) {
 	arg := PutArgs{Key: key, Value: value}
 	var reply PutReply
 
@@ -69,4 +93,22 @@ func (ck *Clerk) Put(key string, value []byte) {
 	if err {
 		log.Println(reply.Err)
 	}
+}
+
+//PutTimeData :
+func (ck *Clerk) PutTimeData(key string, time uint32, value float64) {
+	if ck.localTimeSeries == nil {
+		ck.localTimeSeries = tsz.New(time)
+	}
+
+	ck.localTimeSeries.Push(time, value)
+}
+
+//PutTimeDataBack :
+func (ck *Clerk) PutTimeDataBack(key string, time uint32, value float64) {
+	ck.PutTimeData(key, time, value)
+
+	ck.localTimeSeries.Finish()
+	allValues := ck.localTimeSeries.Bytes()
+	ck.putRaw(key, allValues)
 }

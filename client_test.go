@@ -22,8 +22,8 @@ func TestClientWithSingleServer(t *testing.T) {
 	srv := StartServer("127.0.0.1:1234", 1)
 
 	client := MakeClerk("127.0.0.1:1234")
-	client.Put("t1", []byte("v1"))
-	ret := client.Get("t1")
+	client.putRaw("t1", []byte("v1"))
+	ret := client.getRaw("t1")
 
 	log.Println("got:", ret)
 	if string(ret) != "v1" {
