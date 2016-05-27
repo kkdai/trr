@@ -16,9 +16,10 @@ import (
 	"log"
 	"os"
 	"testing"
+	"time"
 )
 
-func TestClientWithSingleServer(t *testing.T) {
+func TestClientWithSingleServerWithRawData(t *testing.T) {
 	srv := StartServer("127.0.0.1:1234", 1)
 
 	client := MakeClerk("127.0.0.1:1234")
@@ -29,6 +30,68 @@ func TestClientWithSingleServer(t *testing.T) {
 	if string(ret) != "v1" {
 		t.Error("Client get error:", ret)
 	}
+
+	srv.kill()
+	os.RemoveAll("trr-1")
+}
+
+func TestClientWithSingleServerWithTimeDataFirst(t *testing.T) {
+	t0, _ := time.ParseInLocation("Jan _2 2006 15:04:05", "Mar 24 2015 02:00:00", time.Local)
+	tunix := uint32(t0.Unix())
+
+	srv := StartServer("127.0.0.1:1239", 1)
+
+	client := MakeClerk("127.0.0.1:1239")
+	client.PutTimeData("t1", tunix, 10)
+	tt, vv, err := client.GetTimeData("t1")
+	if err != nil || tt != tunix || vv != 10 {
+		t.Error("Simple time get error", tt, vv, err)
+	}
+
+	tt, vv, err = client.GetTimeData("t1")
+	if err == nil {
+		t.Error("Should be error when no value", err)
+	}
+
+	srv.kill()
+	os.RemoveAll("trr-1")
+}
+
+func TestClientWithSingleServerWithTimeDataSecond(t *testing.T) {
+	t0, _ := time.ParseInLocation("Jan _2 2006 15:04:05", "Mar 24 2015 02:00:00", time.Local)
+	t0unix := uint32(t0.Unix())
+
+	srv := StartServer("127.0.0.1:1230", 1)
+
+	client := MakeClerk("127.0.0.1:1230")
+	client.PutTimeData("t1", t0unix, 10)
+
+	t1unix := t0unix + 62
+	client.PutTimeData("t1", t1unix, 12)
+
+	t2unix := t1unix + 62
+	client.PutTimeDataBack("t1", t2unix, 14)
+
+	tt, vv, err := client.GetTimeData("t1")
+	if err != nil || tt != t0unix || vv != 10 {
+		t.Error("Simple time get error", tt, vv, err)
+	}
+
+	tt, vv, err = client.GetTimeData("t1")
+	if err != nil || tt != t1unix || vv != 12 {
+		t.Error("Simple time get error", tt, vv, err)
+	}
+
+	tt, vv, err = client.GetTimeData("t2")
+	if err == nil {
+		t.Error("Should be error when no value", err)
+	}
+
+	tt, vv, err = client.GetTimeData("t1")
+	if err != nil || tt != t2unix || vv != 14 {
+		t.Error("Simple time get error", tt, vv, err)
+	}
+
 	srv.kill()
 	os.RemoveAll("trr-1")
 }

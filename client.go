@@ -21,16 +21,22 @@ import (
 	tsz "github.com/dgryski/go-tsz"
 )
 
-type Clerk struct {
-	server string
-
+type timeData struct {
 	localTimeSeries *tsz.Series
 	localIter       *tsz.Iter
 }
 
+//Clerk :
+type Clerk struct {
+	server string
+	db     map[string]timeData
+}
+
+//MakeClerk :
 func MakeClerk(server string) *Clerk {
 	ck := new(Clerk)
 	ck.server = server
+	ck.db = make(map[string]timeData)
 	return ck
 }
 
@@ -44,7 +50,7 @@ func call(srv string, rpcname string,
 	defer c.Close()
 
 	err := c.Call(rpcname, args, reply)
-	if err == nil {
+	if err != nil {
 		log.Println("[Client] Call err:", err)
 		return true
 	}
@@ -68,19 +74,23 @@ func (ck *Clerk) getRaw(key string) []byte {
 
 //GetTimeData :
 func (ck *Clerk) GetTimeData(key string) (uint32, float64, error) {
-	if ck.localIter == nil || ck.localIter.Next() == false {
+
+	vT, exist := ck.db[key]
+	if !exist || vT.localIter == nil || vT.localIter.Next() == false {
 		timeData := ck.getRaw(key)
 		if timeData == nil {
 			return 0, 0, errors.New("No key")
 		}
 		var err error
-		ck.localIter, err = tsz.NewIterator(timeData)
+		vT.localIter, err = tsz.NewIterator(timeData)
 		if err != nil {
 			return 0, 0, errors.New("No value")
 		}
+		vT.localIter.Next()
+		ck.db[key] = vT
 	}
 
-	tt, vv := ck.localIter.Values()
+	tt, vv := ck.db[key].localIter.Values()
 	return tt, vv, nil
 }
 
@@ -97,18 +107,23 @@ func (ck *Clerk) putRaw(key string, value []byte) {
 
 //PutTimeData :
 func (ck *Clerk) PutTimeData(key string, time uint32, value float64) {
-	if ck.localTimeSeries == nil {
-		ck.localTimeSeries = tsz.New(time)
+	if _, exist := ck.db[key]; !exist {
+		newT := timeData{}
+		newT.localTimeSeries = tsz.New(time)
+		ck.db[key] = newT
 	}
 
-	ck.localTimeSeries.Push(time, value)
+	ck.db[key].localTimeSeries.Push(time, value)
+	newT := timeData{localTimeSeries: ck.db[key].localTimeSeries, localIter: ck.db[key].localTimeSeries.Iter()}
+	ck.db[key] = newT
 }
 
 //PutTimeDataBack :
 func (ck *Clerk) PutTimeDataBack(key string, time uint32, value float64) {
 	ck.PutTimeData(key, time, value)
 
-	ck.localTimeSeries.Finish()
-	allValues := ck.localTimeSeries.Bytes()
+	ck.db[key].localTimeSeries.Finish()
+	allValues := ck.db[key].localTimeSeries.Bytes()
 	ck.putRaw(key, allValues)
+	delete(ck.db, key)
 }

@@ -1,7 +1,7 @@
-RaftRPC: Simple RPC Key Value Server using etcd/Raft in Golang
+TRR: A Key-Value time-series with gorilla algorithm using in Raft consistency RPC Server
 ==============
 
-[![GoDoc](https://godoc.org/github.com/kkdai/raftrpc?status.svg)](https://godoc.org/github.com/kkdai/raftrpc)  [![Build Status](https://travis-ci.org/kkdai/raftrpc.svg?branch=master)](https://travis-ci.org/kkdai/raftrpc)
+[![GoDoc](https://godoc.org/github.com/kkdai/trr?status.svg)](https://godoc.org/github.com/kkdai/trr)  [![Build Status](https://travis-ci.org/kkdai/trr.svg?branch=master)](https://travis-ci.org/kkdai/trr)
 
 
 
@@ -35,7 +35,7 @@ Installation and Usage
 Install
 ---------------
 ```
-go get github.com/kkdai/raftrpc
+go get github.com/kkdai/trr
 ```
 
 Usage
@@ -49,7 +49,7 @@ package main
 import (
 	"fmt"
     
-	. "github.com/kkdai/raftrpc"
+	. "github.com/kkdai/trr"
 )
     
 func main() {
@@ -122,6 +122,7 @@ Inspired By
 - [CoreOS ETCD source code](https://github.com/coreos/etcd)
 - [ETCD Example](https://github.com/coreos/etcd/tree/master/contrib/raftexample)
 - [Raft: A First Implementation](http://otm.github.io/2015/05/raft-a-first-implementation/)
+- [Gorilla time-series algorithm on golang](https://github.com/dgryski/go-tsz)
 
 Project52
 ---------------
