@@ -66,7 +66,7 @@ func (kv *KVRaft) Get(args *GetArgs, reply *GetReply) error {
 func (kv *KVRaft) Put(args *PutArgs, reply *PutReply) error {
 	log.Println("[PUT]", args)
 
-	if args.Key == "" || args.Value == "" {
+	if args.Key == "" || len(args.Value) == 0 {
 		log.Println("[PUT]", InvalidParam)
 		err := errors.New(InvalidParam)
 		reply.Err = InvalidParam

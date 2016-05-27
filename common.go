@@ -22,12 +22,12 @@ type Err string
 
 type PutArgs struct {
 	Key   string
-	Value string
+	Value []byte
 }
 
 type PutReply struct {
 	Err           Err
-	PreviousValue string
+	PreviousValue []byte
 }
 
 type GetArgs struct {
@@ -36,5 +36,5 @@ type GetArgs struct {
 
 type GetReply struct {
 	Err   Err
-	Value string
+	Value []byte
 }

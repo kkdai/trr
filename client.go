@@ -49,7 +49,7 @@ func call(srv string, rpcname string,
 
 //Get
 // fetch the current value for a key.
-func (ck *Clerk) Get(key string) string {
+func (ck *Clerk) Get(key string) []byte {
 	arg := GetArgs{Key: key}
 	var reply GetReply
 	err := call(ck.server, "KVRaft.Get", &arg, &reply)
@@ -61,7 +61,7 @@ func (ck *Clerk) Get(key string) string {
 }
 
 //Put
-func (ck *Clerk) Put(key string, value string) {
+func (ck *Clerk) Put(key string, value []byte) {
 	arg := PutArgs{Key: key, Value: value}
 	var reply PutReply
 

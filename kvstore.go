@@ -26,17 +26,17 @@ import (
 type kvstore struct {
 	proposeC  chan<- string // channel for proposing updates
 	mu        sync.RWMutex
-	kvStore   map[string]string // current committed key-value pairs
+	kvStore   map[string][]byte // current committed key-value pairs
 	needFlush bool
 }
 
 type kv struct {
 	Key string
-	Val string
+	Val []byte
 }
 
 func newKVStore(proposeC chan<- string, commitC <-chan *string, errorC <-chan error) *kvstore {
-	s := &kvstore{proposeC: proposeC, kvStore: make(map[string]string)}
+	s := &kvstore{proposeC: proposeC, kvStore: make(map[string][]byte)}
 	// replay log into key-value map
 	s.readCommits(commitC, errorC)
 	// read commits from raft into kvStore map until error
@@ -44,7 +44,7 @@ func newKVStore(proposeC chan<- string, commitC <-chan *string, errorC <-chan er
 	return s
 }
 
-func (s *kvstore) Lookup(key string) (string, bool) {
+func (s *kvstore) Lookup(key string) ([]byte, bool) {
 	//log.Println("Kv find K=", key, " map:", s.kvStore)
 	flushLimit := 0
 	for s.needFlush && flushLimit < 10 {
@@ -58,7 +58,7 @@ func (s *kvstore) Lookup(key string) (string, bool) {
 	return v, ok
 }
 
-func (s *kvstore) Propose(k string, v string) {
+func (s *kvstore) Propose(k string, v []byte) {
 	s.needFlush = true
 	var buf bytes.Buffer
 	if err := gob.NewEncoder(&buf).Encode(kv{k, v}); err != nil {

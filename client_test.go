@@ -22,11 +22,11 @@ func TestClientWithSingleServer(t *testing.T) {
 	srv := StartServer("127.0.0.1:1234", 1)
 
 	client := MakeClerk("127.0.0.1:1234")
-	client.Put("t1", "v1")
+	client.Put("t1", []byte("v1"))
 	ret := client.Get("t1")
 
 	log.Println("got:", ret)
-	if ret != "v1" {
+	if string(ret) != "v1" {
 		t.Error("Client get error:", ret)
 	}
 	srv.kill()
