@@ -5,12 +5,22 @@ TRR: A Key-Value time-series with gorilla algorithm using in Raft consistency RP
 
 
 
-What is Raft RPC Server/Client
+What is TRR
 =============
 
-This is a simple KV Server (Key/Value) server using [raft consensus algorithm](https://github.com/coreos/etcd). (implement by [CoreOS/etcd](https://github.com/coreos/etcd)).
+
+TRR (Time-series Raft RPC client/server) is a package to help you hosted a simple KV value with time-series data under [raft consensus algorithm](https://github.com/coreos/etcd). (implement by [CoreOS/etcd](https://github.com/coreos/etcd)).
 
 It provide a basic RPC Client/Server for K/V(Key Value) storage service.
+
+Features
+=============
+
+- [raft consensus algorithm](https://github.com/coreos/etcd)
+- Key/Value base usage, easy to Get/Set time-series data.
+- Based on Gorilla algorithm which could reduce data size to 12X.
+- RPC entry point, easy to use.
+
 
 What is Raft
 =============
